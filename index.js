@@ -42,6 +42,23 @@ async function run(){
             res.send(result);
         })
 
+        app.put('/event/:id', async(req, res) => {
+           const id= req.params.id;
+           const data = req.body;
+           const query = {_id: ObjectId(id)};
+           const options = { upsert: true };
+           const updateDoc = {
+            $set: {
+                eventName: data.eventName,
+                eventType: data.event,
+                description: data.description,
+                dateTime: data.dateTime
+            },
+          };
+          const result = await eventCollections.updateOne(query, updateDoc, options);
+          res.send(result);
+        })
+
     }finally{
 
     }
