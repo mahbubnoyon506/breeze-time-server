@@ -16,6 +16,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function run(){
     try{
+        await client.connect();
         const eventCollections = client.db('EventCollection').collection('events');
 
        app.get('/events', async(req, res) => {
