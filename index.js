@@ -16,6 +16,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function run(){
     try{
+        await client.connect();
         const eventCollections = client.db('EventCollection').collection('events');
 
        app.get('/events', async(req, res) => {
@@ -40,6 +41,23 @@ async function run(){
             const query = {_id: ObjectId(id)};
             const result = await eventCollections.deleteOne(query);
             res.send(result);
+        })
+
+        app.put('/event/:id', async(req, res) => {
+           const id= req.params.id;
+           const data = req.body;
+           const query = {_id: ObjectId(id)};
+           const options = { upsert: true };
+           const updateDoc = {
+            $set: {
+                eventName: data.eventName,
+                eventType: data.event,
+                description: data.description,
+                dateTime: data.dateTime
+            },
+          };
+          const result = await eventCollections.updateOne(query, updateDoc, options);
+          res.send(result);
         })
 
     }finally{
