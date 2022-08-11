@@ -7,8 +7,9 @@ const port = process.env.PORT || 5000;
 const app = express();
 app.use(cors());
 app.use(express.json());
-const server = require('http').createServer(app);
 
+// socket server and connect 
+const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
     cors: {
         origin: '*',
@@ -71,6 +72,11 @@ async function run() {
     }
 }
 run().catch(console.dir)
+
+// socket apis 
+io.on('connection', (socket) => {
+    socket.emit('connectId', socket.id)
+})
 
 
 app.get('/', (req, res) => {
