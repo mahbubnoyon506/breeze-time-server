@@ -8,16 +8,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// socket server and connect 
+const server = require('http').createServer(app);
+const io = require('socket.io')(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+})
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.shcob.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+async function run() {
+    try {
 
-async function run(){
-    try{
-        await client.connect();
         const eventCollections = client.db('EventCollection').collection('events');
         const userCollections = client.db('userCollection').collection('users');
 
@@ -25,6 +32,7 @@ async function run(){
             const result = await eventCollections.find().toArray();
             res.send(result)
         })
+
 
 
         // for jwt 
@@ -56,6 +64,11 @@ async function run(){
             res.send(result);
         })
         // for jwt 
+
+        app.get('/events', async (req, res) => {
+            const result = await eventCollections.find().toArray();
+            res.send(result)
+        })
 
 
         app.post('/events', async (req, res) => {
@@ -99,6 +112,11 @@ async function run(){
     }
 }
 run().catch(console.dir)
+
+// socket apis 
+io.on('connection', (socket) => {
+    socket.emit('connectId', socket.id)
+})
 
 
 app.get('/', (req, res) => {
