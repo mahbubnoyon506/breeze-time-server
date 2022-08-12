@@ -29,12 +29,12 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        return res.status(401).send({message: 'Unauthorized access denied!'});
+        return res.status(401).send({ message: 'Unauthorized access denied!' });
     }
     const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded){
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
         if (err) {
-            return res.status(403).send({message:'Forbidden access'})
+            return res.status(403).send({ message: 'Forbidden access' })
         }
         req.decoded = decoded;
         next();
@@ -69,7 +69,7 @@ async function run() {
                 })
 
             })
-
+        })
         // for jwt 
 
         app.get('/users', verifyJWT, async (req, res) => {
@@ -97,26 +97,26 @@ async function run() {
         app.put('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const requester = req.decoded.email;
-            const requestAccount = await userCollections.findOne({email: requester});
+            const requestAccount = await userCollections.findOne({ email: requester });
             if (requestAccount.role === 'admin') {
                 const filter = { email: email };
-            const updateDoc = {
-                $set: {role: 'admin'},
-            };
-            const result = await userCollections.updateOne(filter, updateDoc);
-            res.send(result);
+                const updateDoc = {
+                    $set: { role: 'admin' },
+                };
+                const result = await userCollections.updateOne(filter, updateDoc);
+                res.send(result);
             }
             else {
-                res.status(403).send({message: 'Forbidden access!'});
+                res.status(403).send({ message: 'Forbidden access!' });
             }
         })
 
         //admin check
-        app.get('/admin/:email', async(req, res) => {
+        app.get('/admin/:email', async (req, res) => {
             const email = req.params.email;
-            const user = await userCollections.findOne({email : email});
+            const user = await userCollections.findOne({ email: email });
             const isAdmin = user.role === 'admin';
-            res.send({admin : isAdmin});
+            res.send({ admin: isAdmin });
         })
 
         //user update
@@ -129,8 +129,8 @@ async function run() {
                 $set: user,
             };
             const result = await userCollections.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({email: email}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '30d'})
-            res.send({result, token});
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30d' })
+            res.send({ result, token });
         })
         // for jwt 
 
