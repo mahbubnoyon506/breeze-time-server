@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');       //for jwt//
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -9,101 +8,28 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// socket server and connect 
+const server = require('http').createServer(app);
+const io = require('socket.io')(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+})
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.shcob.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-// verify jwt 
-
-function verifyJWT(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).send({message: 'Unauthorized access denied!'});
-    }
-    const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded){
-        if (err) {
-            return res.status(403).send({message:'Forbidden access'})
-        }
-        req.decoded = decoded;
-        next();
-    });
-}
-
-// verify jwt 
 
 async function run() {
     try {
-
         const eventCollections = client.db('EventCollection').collection('events');
-        const userCollections = client.db('userCollection').collection('users');
 
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
             res.send(result)
         })
-
-
-        // for jwt 
-
-        app.get('/users', verifyJWT, async (req, res) => {
-            const result = await userCollections.find().toArray();
-            const decodedEmail = req.decoded.email;
-            if (user === decodedEmail) {
-                return res.send(result);
-            }
-            else{
-                return res.status(403).send({message: 'Forbidden access!'});
-            }
-        })
-
-        app.post('/users', async (req, res) => {
-            const users = req.body;
-            const query = {
-                userName: users.userName,
-                userEmail: users.email
-            }
-            const results = await userCollections.insertOne(query);
-            res.send(results);
-        })
-
-        app.put('/users/admin/:email', async (req, res) => {
-            const email = req.params.email;
-            const requester = req.decoded.email;
-            const requestAccount = await userCollections.findOne({email: requester});
-            if (requestAccount.role === 'admin') {
-                const filter = { email: email };
-            const updateDoc = {
-                $set: {role: 'admin'},
-            };
-            const result = await userCollections.updateOne(filter, updateDoc);
-            res.send(result);
-            }
-            else {
-                res.status(403).send({message: 'Forbidden access!'});
-            }
-        })
-
-        app.put('/users/:email', async (req, res) => {
-            const email = req.params.email;
-            const user = req.body;
-            const filter = { email: email };
-            const options = { upsert: true };
-            const updateDoc = {
-                $set: user,
-            };
-            const result = await userCollections.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({email: email}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '30d'})
-            res.send({result, token});
-        })
-        // for jwt 
-
-        app.get('/events', async (req, res) => {
-            const result = await eventCollections.find().toArray();
-            res.send(result)
-        })
-
 
         app.post('/events', async (req, res) => {
             const events = req.body;
@@ -146,6 +72,11 @@ async function run() {
     }
 }
 run().catch(console.dir)
+
+// socket apis 
+io.on('connection', (socket) => {
+    socket.emit('connectId', socket.id)
+})
 
 
 app.get('/', (req, res) => {
