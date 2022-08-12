@@ -35,19 +35,20 @@ async function run() {
 
             //triger notification before 30 min of exact time and date
             result.map(r => {
-                // console.log(r.dateTime)
-                if (r.dateTime === new Date()) {
-                    const thirtyMinBeforeEvent = moment("2022-08-12T13:11:04.018Z").subtract(30, 'm').toString();
-                    console.log(thirtyMinBeforeEvent)
-                    // schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
-                    //     console.log('before 30 min',)
-                    //     const query = {
-                    //         notification: `Your ${r.eventName} is after 30 min.`
-                    //     }
-                    //     const notificationResult = await notificationCollections.insertOne(query);
-                    //     console.log(notificationResult)
-                    // })
-                }
+                // console.log()
+                const time = "2022-08-12T14:04:08.018Z"
+                const thirtyMinBeforeEvent = moment(time).subtract(30, 'm').toString();
+                schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
+                    // console.log(r.dateTime)
+                    if (moment(thirtyMinBeforeEvent) === moment()) {
+                        console.log('before 30 min',)
+                        // const query = {
+                        //     eventNotification: `Your ${r.eventName} is after 30 min.`
+                        // }
+                        // const notificationResult = await notificationCollections.insertOne(query);
+                        // console.log(notificationResult)
+                    }
+                })
 
             })
             res.send(result)
