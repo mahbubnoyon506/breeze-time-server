@@ -4,6 +4,7 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 //schedule for triger notification
 const schedule = require('node-schedule');
+const moment = require('moment')
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -31,6 +32,15 @@ async function run() {
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
             res.send(result)
+
+            //triger notification before 30 min of exact time and date
+            result.map(r => {
+                const thirtyMinBeforeEvent = moment(r.dateTime).subtract(30, 'm').toString();
+                schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, () => {
+                    console.log('before 30 min',)
+                })
+
+            })
         })
 
         app.post('/events', async (req, res) => {
@@ -80,13 +90,6 @@ io.on('connection', (socket) => {
     socket.emit('connectId', socket.id)
 })
 
-//notification
-//triger notification at exact time and date
-const eventDate = new Date('2022-08-12T12:54:00.000+6:00');
-
-schedule.scheduleJob('eventNotification', eventDate, () => {
-    console.log('notification will trigger')
-})
 
 
 app.get('/', (req, res) => {
