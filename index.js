@@ -28,19 +28,29 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const eventCollections = client.db('EventCollection').collection('events');
+        const notificationCollections = client.db('notificationCollection').collection('eventNotifications');
 
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
-            res.send(result)
 
             //triger notification before 30 min of exact time and date
             result.map(r => {
-                const thirtyMinBeforeEvent = moment(r.dateTime).subtract(30, 'm').toString();
-                schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, () => {
-                    console.log('before 30 min',)
-                })
+                // console.log(r.dateTime)
+                if (r.dateTime === new Date()) {
+                    const thirtyMinBeforeEvent = moment("2022-08-12T13:11:04.018Z").subtract(30, 'm').toString();
+                    console.log(thirtyMinBeforeEvent)
+                    // schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
+                    //     console.log('before 30 min',)
+                    //     const query = {
+                    //         notification: `Your ${r.eventName} is after 30 min.`
+                    //     }
+                    //     const notificationResult = await notificationCollections.insertOne(query);
+                    //     console.log(notificationResult)
+                    // })
+                }
 
             })
+            res.send(result)
         })
 
         app.post('/events', async (req, res) => {
