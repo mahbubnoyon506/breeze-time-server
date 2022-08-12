@@ -14,8 +14,8 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.shcob.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-// verify jwt 
 
+// verify jwt 
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -32,30 +32,24 @@ function verifyJWT(req, res, next) {
 }
 
 // verify jwt 
-
 async function run() {
     try {
 
         const eventCollections = client.db('EventCollection').collection('events');
         const userCollections = client.db('userCollection').collection('users');
 
-        app.get('/events', async (req, res) => {
-            const result = await eventCollections.find().toArray();
-            res.send(result)
-        })
-
-
         // for jwt 
 
         app.get('/users', verifyJWT, async (req, res) => {
             const result = await userCollections.find().toArray();
-            const decodedEmail = req.decoded.email;
-            if (user === decodedEmail) {
-                return res.send(result);
-            }
-            else{
-                return res.status(403).send({message: 'Forbidden access!'});
-            }
+            // const decodedEmail = req.decoded.email;
+            // if (user === decodedEmail) {
+            //     return res.send(result);
+            // }
+            // else{
+            //     return res.status(403).send({message: 'Forbidden access!'});
+            // }
+            res.send(result);
         })
 
         app.post('/users', async (req, res) => {
@@ -68,7 +62,7 @@ async function run() {
             res.send(results);
         })
 
-        app.put('/users/admin/:email', async (req, res) => {
+        app.put('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const requester = req.decoded.email;
             const requestAccount = await userCollections.findOne({email: requester});
@@ -85,6 +79,15 @@ async function run() {
             }
         })
 
+        //admin check
+        app.get('/admin/:email', async(req, res) => {
+            const email = req.params.email;
+            const user = await userCollections.findOne({email : email});
+            const isAdmin = user.role === 'admin';
+            res.send({admin : isAdmin});
+        })
+
+        //user update
         app.put('/users/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
@@ -99,11 +102,12 @@ async function run() {
         })
         // for jwt 
 
-        app.get('/events', async (req, res) => {
+        app.get('/events', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            console.log(decodedEmail);
             const result = await eventCollections.find().toArray();
             res.send(result)
         })
-
 
         app.post('/events', async (req, res) => {
             const events = req.body;
