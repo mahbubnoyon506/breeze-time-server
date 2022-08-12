@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+//schedule for triger notification
+const schedule = require('node-schedule');
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -79,7 +81,12 @@ io.on('connection', (socket) => {
 })
 
 //notification
+//triger notification at exact time and date
+const eventDate = new Date('2022-08-12T12:54:00.000+6:00');
 
+schedule.scheduleJob('eventNotification', eventDate, () => {
+    console.log('notification will trigger')
+})
 
 
 app.get('/', (req, res) => {
