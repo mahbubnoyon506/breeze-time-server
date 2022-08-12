@@ -1,14 +1,24 @@
 const express = require('express');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');       //for jwt//
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+//schedule for triger notification
+const schedule = require('node-schedule');
+const moment = require('moment')
 
 const port = process.env.PORT || 5000;
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// socket server and connect 
+const server = require('http').createServer(app);
+const io = require('socket.io')(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+})
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.shcob.mongodb.net/?retryWrites=true&w=majority`;
@@ -34,9 +44,31 @@ function verifyJWT(req, res, next) {
 // verify jwt 
 async function run() {
     try {
-
         const eventCollections = client.db('EventCollection').collection('events');
-        const userCollections = client.db('userCollection').collection('users');
+        const notificationCollections = client.db('notificationCollection').collection('eventNotifications');
+
+
+        app.get('/events', async (req, res) => {
+            const result = await eventCollections.find().toArray();
+
+            //triger notification before 30 min of exact time and date
+            result.map(r => {
+                // console.log()
+                const time = "2022-08-12T14:04:08.018Z"
+                const thirtyMinBeforeEvent = moment(time).subtract(30, 'm').toString();
+                schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
+                    // console.log(r.dateTime)
+                    if (moment(thirtyMinBeforeEvent) === moment()) {
+                        console.log('before 30 min',)
+                        // const query = {
+                        //     eventNotification: `Your ${r.eventName} is after 30 min.`
+                        // }
+                        // const notificationResult = await notificationCollections.insertOne(query);
+                        // console.log(notificationResult)
+                    }
+                })
+
+            })
 
         // for jwt 
 
@@ -106,6 +138,7 @@ async function run() {
             const decodedEmail = req.decoded.email;
             console.log(decodedEmail);
             const result = await eventCollections.find().toArray();
+
             res.send(result)
         })
 
@@ -150,6 +183,12 @@ async function run() {
     }
 }
 run().catch(console.dir)
+
+// socket apis 
+io.on('connection', (socket) => {
+    socket.emit('connectId', socket.id)
+})
+
 
 
 app.get('/', (req, res) => {
