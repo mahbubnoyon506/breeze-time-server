@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+//schedule for triger notification
+const schedule = require('node-schedule');
+const moment = require('moment')
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -22,24 +25,63 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+// verify jwt 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({message: 'Unauthorized access denied!'});
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded){
+        if (err) {
+            return res.status(403).send({message:'Forbidden access'})
+        }
+        req.decoded = decoded;
+        next();
+    });
+}
+
+// verify jwt 
 async function run() {
     try {
-
         const eventCollections = client.db('EventCollection').collection('events');
-        const userCollections = client.db('userCollection').collection('users');
+        const notificationCollections = client.db('notificationCollection').collection('eventNotifications');
+
 
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
-            res.send(result)
-        })
 
+            //triger notification before 30 min of exact time and date
+            result.map(r => {
+                // console.log()
+                const time = "2022-08-12T14:04:08.018Z"
+                const thirtyMinBeforeEvent = moment(time).subtract(30, 'm').toString();
+                schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
+                    // console.log(r.dateTime)
+                    if (moment(thirtyMinBeforeEvent) === moment()) {
+                        console.log('before 30 min',)
+                        // const query = {
+                        //     eventNotification: `Your ${r.eventName} is after 30 min.`
+                        // }
+                        // const notificationResult = await notificationCollections.insertOne(query);
+                        // console.log(notificationResult)
+                    }
+                })
 
+            })
 
         // for jwt 
 
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJWT, async (req, res) => {
             const result = await userCollections.find().toArray();
-            res.send(result)
+            // const decodedEmail = req.decoded.email;
+            // if (user === decodedEmail) {
+            //     return res.send(result);
+            // }
+            // else{
+            //     return res.status(403).send({message: 'Forbidden access!'});
+            // }
+            res.send(result);
         })
 
         app.post('/users', async (req, res) => {
@@ -52,6 +94,32 @@ async function run() {
             res.send(results);
         })
 
+        app.put('/users/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const requester = req.decoded.email;
+            const requestAccount = await userCollections.findOne({email: requester});
+            if (requestAccount.role === 'admin') {
+                const filter = { email: email };
+            const updateDoc = {
+                $set: {role: 'admin'},
+            };
+            const result = await userCollections.updateOne(filter, updateDoc);
+            res.send(result);
+            }
+            else {
+                res.status(403).send({message: 'Forbidden access!'});
+            }
+        })
+
+        //admin check
+        app.get('/admin/:email', async(req, res) => {
+            const email = req.params.email;
+            const user = await userCollections.findOne({email : email});
+            const isAdmin = user.role === 'admin';
+            res.send({admin : isAdmin});
+        })
+
+        //user update
         app.put('/users/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
@@ -61,15 +129,18 @@ async function run() {
                 $set: user,
             };
             const result = await userCollections.updateOne(filter, updateDoc, options);
-            res.send(result);
+            const token = jwt.sign({email: email}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '30d'})
+            res.send({result, token});
         })
         // for jwt 
 
-        app.get('/events', async (req, res) => {
+        app.get('/events', verifyJWT, async (req, res) => {
+            const decodedEmail = req.decoded.email;
+            console.log(decodedEmail);
             const result = await eventCollections.find().toArray();
+
             res.send(result)
         })
-
 
         app.post('/events', async (req, res) => {
             const events = req.body;
@@ -117,6 +188,7 @@ run().catch(console.dir)
 io.on('connection', (socket) => {
     socket.emit('connectId', socket.id)
 })
+
 
 
 app.get('/', (req, res) => {
