@@ -40,7 +40,7 @@ async function run() {
 
         // for jwt 
 
-        app.get('/users',  async (req, res) => {
+        app.get('/users', verifyJWT, async (req, res) => {
             const result = await userCollections.find().toArray();
             // const decodedEmail = req.decoded.email;
             // if (user === decodedEmail) {
@@ -62,7 +62,7 @@ async function run() {
             res.send(results);
         })
 
-        app.put('/users/admin/:email', verifyJWT,  async (req, res) => {
+        app.put('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const requester = req.decoded.email;
             const requestAccount = await userCollections.findOne({email: requester});
@@ -80,7 +80,7 @@ async function run() {
         })
 
         //admin check
-        app.get('/admin/:email', verifyJWT, async(req, res) => {
+        app.get('/admin/:email',verifyJWT, async(req, res) => {
             const email = req.params.email;
             const user = await userCollections.findOne({email : email});
             const isAdmin = user.role === 'admin';
@@ -88,7 +88,7 @@ async function run() {
         })
 
         //user update
-        app.put('/users/:email', verifyJWT, async (req, res) => {
+        app.put('/users/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
             const filter = { email: email };
