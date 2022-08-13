@@ -119,18 +119,14 @@ async function run() {
 
             //triger notification before 30 min of exact time and date
             result.map(r => {
-                // console.log()
-                const time = "2022-08-12T14:04:08.018Z"
+                const time = moment(r.dateTime)
                 const thirtyMinBeforeEvent = moment(time).subtract(30, 'm').toString();
                 schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
-                    // console.log(r.dateTime)
-                    if (moment(thirtyMinBeforeEvent) === moment()) {
-                        console.log('before 30 min',)
-                        // const query = {
-                        //     eventNotification: `Your ${r.eventName} is after 30 min.`
-                        // }
-                        // const notificationResult = await notificationCollections.insertOne(query);
-                        // console.log(notificationResult)
+                    if (moment(time).subtract(30, 'm').isAfter(moment())) {
+                        const query = {
+                            eventNotification: `Your ${r.eventName} is after 30 min.`
+                        }
+                        const notificationResult = await notificationCollections.insertOne(query);
                     }
                 })
 
@@ -175,6 +171,11 @@ async function run() {
             res.send(result);
         })
 
+        app.get('/notifications', async (req, res) => {
+            const result = await notificationCollections.find().toArray();
+            res.send(result);
+        })
+
     } finally {
 
     }
@@ -186,7 +187,6 @@ run().catch(console.dir)
 io.on('connection', (socket) => {
     socket.emit('connectId', socket.id)
 })
-
 
 app.get('/', (req, res) => {
     res.send('Breeze Time Server Running')
