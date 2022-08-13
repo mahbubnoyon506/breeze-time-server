@@ -188,20 +188,6 @@ io.on('connection', (socket) => {
     socket.emit('connectId', socket.id)
 })
 
-// const time = "2022-08-13T20:57:08.018Z"
-// const thirtyMinBeforeEvent = moment(time).subtract(30, 'm');
-// console.log(thirtyMinBeforeEvent, 'time', moment())
-// schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
-//     if (moment(thirtyMinBeforeEvent) === moment() || thirtyMinBeforeEvent > moment()) {
-//         console.log('before 30 min',)
-//         // const query = {
-//         //     eventNotification: `Your ${r.eventName} is after 30 min.`
-//         // }
-//         // const notificationResult = await notificationCollections.insertOne(query);
-//         // console.log(notificationResult)
-//     }
-// })
-
 app.get('/', (req, res) => {
     res.send('Breeze Time Server Running')
 });
