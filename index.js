@@ -3,23 +3,13 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');       //for jwt//
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-//schedule for triger notification
-const schedule = require('node-schedule');
-const moment = require('moment')
+const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
 
 const port = process.env.PORT || 5000;
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-//socket server and connect
-const server = require('http').createServer(app);
-const io = require('socket.io')(server, {
-    cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
-    }
-})
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.shcob.mongodb.net/?retryWrites=true&w=majority`;
@@ -48,7 +38,27 @@ async function run() {
 
         const eventCollections = client.db('EventCollection').collection('events');
         const userCollections = client.db('userCollection').collection('users');
+        const professionalCollection = client.db('professionalCollection').collection('professional')
         const notificationCollections = client.db('notificationCollection').collection('eventNotifications');
+
+
+
+        //payment API
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: [
+                    "card"
+                ],
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        })
+
 
         // for jwt 
 
@@ -74,6 +84,7 @@ async function run() {
             res.send(results);
         })
 
+        // give admin role
         app.put('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const requester = req.decoded.email;
@@ -98,6 +109,13 @@ async function run() {
             const isAdmin = user.role === 'admin';
             res.send({ admin: isAdmin });
         })
+
+        //professional role
+          app.post('/users/professional', async (req, res) => {
+            const query = req.body;
+            const result = await professionalCollection.insertOne(query);
+            res.send(result);
+          })
 
         //user update
         app.put('/users/:email', async (req, res) => {
@@ -182,11 +200,6 @@ async function run() {
 }
 run().catch(console.dir)
 
-
-// socket apis 
-io.on('connection', (socket) => {
-    socket.emit('connectId', socket.id)
-})
 
 app.get('/', (req, res) => {
     res.send('Breeze Time Server Running')
