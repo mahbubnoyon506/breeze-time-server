@@ -39,6 +39,7 @@ async function run() {
         const eventCollections = client.db('EventCollection').collection('events');
         const userCollections = client.db('userCollection').collection('users');
         const professionalCollection = client.db('professionalCollection').collection('professional')
+        const notificationCollections = client.db('notificationCollection').collection('eventNotifications');
 
 
 
@@ -57,6 +58,7 @@ async function run() {
                 clientSecret: paymentIntent.client_secret,
             });
         })
+
 
         // for jwt 
 
@@ -132,6 +134,22 @@ async function run() {
 
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
+
+            //triger notification before 30 min of exact time and date
+            result.map(r => {
+                const time = moment(r.dateTime)
+                const thirtyMinBeforeEvent = moment(time).subtract(30, 'm').toString();
+                schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
+                    if (moment(time).subtract(30, 'm').isAfter(moment())) {
+                        const query = {
+                            eventNotification: `Your ${r.eventName} is after 30 min.`
+                        }
+                        const notificationResult = await notificationCollections.insertOne(query);
+                    }
+                })
+
+            })
+
             res.send(result)
         })
 
@@ -172,6 +190,10 @@ async function run() {
         })
 
 
+        app.get('/notifications', async (req, res) => {
+            const result = await notificationCollections.find().toArray();
+            res.send(result);
+        })
 
     } finally {
 
