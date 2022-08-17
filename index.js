@@ -189,6 +189,7 @@ async function run() {
             res.send(result);
         })
 
+
         app.get('/notifications', async (req, res) => {
             const result = await notificationCollections.find().toArray();
             res.send(result);
