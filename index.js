@@ -3,6 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');       //for jwt//
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -19,12 +20,12 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        return res.status(401).send({message: 'Unauthorized access denied!'});
+        return res.status(401).send({ message: 'Unauthorized access denied!' });
     }
     const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded){
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
         if (err) {
-            return res.status(403).send({message:'Forbidden access'})
+            return res.status(403).send({ message: 'Forbidden access' })
         }
         req.decoded = decoded;
         next();
@@ -37,6 +38,25 @@ async function run() {
 
         const eventCollections = client.db('EventCollection').collection('events');
         const userCollections = client.db('userCollection').collection('users');
+        const professionalCollection = client.db('professionalCollection').collection('professional')
+
+
+
+        //payment API
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: [
+                    "card"
+                ],
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        })
 
         // for jwt 
 
@@ -62,30 +82,38 @@ async function run() {
             res.send(results);
         })
 
+        // give admin role
         app.put('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const requester = req.decoded.email;
-            const requestAccount = await userCollections.findOne({email: requester});
+            const requestAccount = await userCollections.findOne({ email: requester });
             if (requestAccount.role === 'admin') {
                 const filter = { email: email };
-            const updateDoc = {
-                $set: {role: 'admin'},
-            };
-            const result = await userCollections.updateOne(filter, updateDoc);
-            res.send(result);
+                const updateDoc = {
+                    $set: { role: 'admin' },
+                };
+                const result = await userCollections.updateOne(filter, updateDoc);
+                res.send(result);
             }
             else {
-                res.status(403).send({message: 'Forbidden access!'});
+                res.status(403).send({ message: 'Forbidden access!' });
             }
         })
 
         //admin check
-        app.get('/admin/:email',verifyJWT, async(req, res) => {
+        app.get('/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-            const user = await userCollections.findOne({email : email});
+            const user = await userCollections.findOne({ email: email });
             const isAdmin = user.role === 'admin';
-            res.send({admin : isAdmin});
+            res.send({ admin: isAdmin });
         })
+
+        //professional role
+          app.post('/users/professional', async (req, res) => {
+            const query = req.body;
+            const result = await professionalCollection.insertOne(query);
+            res.send(result);
+          })
 
         //user update
         app.put('/users/:email', async (req, res) => {
@@ -97,8 +125,8 @@ async function run() {
                 $set: user,
             };
             const result = await userCollections.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({email: email}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '30d'})
-            res.send({result, token});
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30d' })
+            res.send({ result, token });
         })
         // for jwt 
 
@@ -142,6 +170,8 @@ async function run() {
             const result = await eventCollections.updateOne(query, updateDoc, options);
             res.send(result);
         })
+
+
 
     } finally {
 
