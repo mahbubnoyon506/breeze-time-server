@@ -109,7 +109,6 @@ async function run() {
             const email = req.params.email;
             const requester = req.decoded.email;
             const requestAccount = await userCollections.findOne({ email: requester });
-            console.log(requestAccount);
             if (requestAccount.role === 'admin') {
                 const filter = { email: email };
                 const updateDoc = {
