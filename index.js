@@ -74,6 +74,7 @@ async function run() {
             res.send(results);
         })
 
+        // make admin 
         app.put('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const requester = req.decoded.email;
@@ -82,6 +83,25 @@ async function run() {
                 const filter = { email: email };
                 const updateDoc = {
                     $set: { role: 'admin' },
+                };
+                const result = await userCollections.updateOne(filter, updateDoc);
+                res.send(result);
+            }
+            else {
+                res.status(403).send({ message: 'Forbidden access!' });
+            }
+        })
+
+        // remove admin 
+        app.put('/users/user/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const requester = req.decoded.email;
+            const requestAccount = await userCollections.findOne({ email: requester });
+            console.log(requestAccount);
+            if (requestAccount.role === 'admin') {
+                const filter = { email: email };
+                const updateDoc = {
+                    $set: { role: '' },
                 };
                 const result = await userCollections.updateOne(filter, updateDoc);
                 res.send(result);
@@ -117,7 +137,7 @@ async function run() {
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
 
-            //triger notification before 30 min of exact time and date
+            //trigger notification before 30 min of exact time and date
             result.map(r => {
                 const time = moment(r.dateTime)
                 const thirtyMinBeforeEvent = moment(time).subtract(30, 'm').toString();
