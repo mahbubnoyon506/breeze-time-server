@@ -175,15 +175,17 @@ async function run() {
         })
 
         app.post('/events', async (req, res) => {
-            const events = req.body;
-            const query = {
-                eventName: events.eventName,
-                eventType: events.event,
-                description: events.description,
-                dateTime: events.dateTime
-            }
+            const query = req.body;
             const results = await eventCollections.insertOne(query);
             res.send(results);
+        })
+
+        //get events with host
+        app.get('/event', async(req, res) => {
+          const host = req.query.host;
+          const query = {host};
+          const result = await eventCollections.find(query).toArray()
+          res.send(result);
         })
 
         app.delete('/event/:id', async (req, res) => {
@@ -209,6 +211,7 @@ async function run() {
             const result = await eventCollections.updateOne(query, updateDoc, options);
             res.send(result);
         })
+
 
         app.get('/notifications', async (req, res) => {
             const result = await notificationCollections.find().toArray();
