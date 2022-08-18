@@ -62,7 +62,6 @@ async function run() {
 
 
         // for jwt 
-
         app.get('/users', verifyJWT, async (req, res) => {
             const result = await userCollections.find().toArray();
             // const decodedEmail = req.decoded.email;
@@ -85,9 +84,7 @@ async function run() {
             res.send(results);
         })
 
-
         // make admin 
-
         app.put('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const requester = req.decoded.email;
@@ -141,12 +138,31 @@ async function run() {
             res.send({ admin: isAdmin });
         })
 
-        //professional role
-          app.post('/users/professional', async (req, res) => {
+        //professional check
+        app.get('/professional/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const user = await userCollections.findOne({ email: email });
+            const isProfessional = user.status === 'professional';
+            res.send({ professional: isProfessional });
+        })
+
+        //give professional status
+        app.put('/users/professional/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateDoc = {
+                $set: { status: 'professional' },
+            };
+            const result = await userCollections.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+
+        //professional API
+        app.post('/users/professional', async (req, res) => {
             const query = req.body;
             const result = await professionalCollection.insertOne(query);
             res.send(result);
-          })
+        })
 
         //user update
         app.put('/users/:email', async (req, res) => {
@@ -191,11 +207,11 @@ async function run() {
         })
 
         //get events with host
-        app.get('/event', async(req, res) => {
-          const host = req.query.host;
-          const query = {host};
-          const result = await eventCollections.find(query).toArray()
-          res.send(result);
+        app.get('/event', async (req, res) => {
+            const host = req.query.host;
+            const query = { host };
+            const result = await eventCollections.find(query).toArray()
+            res.send(result);
         })
 
         app.delete('/event/:id', async (req, res) => {
