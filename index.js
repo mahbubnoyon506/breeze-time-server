@@ -154,15 +154,17 @@ async function run() {
         })
 
         app.post('/events', async (req, res) => {
-            const events = req.body;
-            const query = {
-                eventName: events.eventName,
-                eventType: events.event,
-                description: events.description,
-                dateTime: events.dateTime
-            }
+            const query = req.body;
             const results = await eventCollections.insertOne(query);
             res.send(results);
+        })
+
+        //get events with host
+        app.get('/event', async(req, res) => {
+          const host = req.query.host;
+          const query = {host};
+          const result = await eventCollections.find(query).toArray()
+          res.send(result);
         })
 
         app.delete('/event/:id', async (req, res) => {
