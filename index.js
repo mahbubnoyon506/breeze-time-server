@@ -40,6 +40,7 @@ async function run() {
         const userCollections = client.db('userCollection').collection('users');
         const professionalCollection = client.db('professionalCollection').collection('professional')
         const notificationCollections = client.db('notificationCollection').collection('eventNotifications');
+        const packagesCollections = client.db('packagesCollection').collection('packages');
 
 
 
@@ -63,13 +64,6 @@ async function run() {
         // for jwt 
         app.get('/users', verifyJWT, async (req, res) => {
             const result = await userCollections.find().toArray();
-            // const decodedEmail = req.decoded.email;
-            // if (user === decodedEmail) {
-            //     return res.send(result);
-            // }
-            // else{
-            //     return res.status(403).send({message: 'Forbidden access!'});
-            // }
             res.send(result);
         })
 
@@ -118,6 +112,16 @@ async function run() {
                 res.status(403).send({ message: 'Forbidden access!' });
             }
         })
+
+
+        // packages 
+        // get packages 
+        app.get('/packages', async (req, res) => {
+            const result = await packagesCollections.find().toArray()
+            console.log(result);
+            res.send(result);
+        })
+
 
         //admin check
         app.get('/admin/:email', verifyJWT, async (req, res) => {
@@ -199,9 +203,7 @@ async function run() {
                         const notificationResult = await notificationCollections.insertOne(query);
                     }
                 })
-
             })
-
             res.send(result)
         })
 
