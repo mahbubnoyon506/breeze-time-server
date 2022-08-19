@@ -64,13 +64,6 @@ async function run() {
         // for jwt 
         app.get('/users', verifyJWT, async (req, res) => {
             const result = await userCollections.find().toArray();
-            // const decodedEmail = req.decoded.email;
-            // if (user === decodedEmail) {
-            //     return res.send(result);
-            // }
-            // else{
-            //     return res.status(403).send({message: 'Forbidden access!'});
-            // }
             res.send(result);
         })
 
@@ -123,11 +116,11 @@ async function run() {
 
         // packages 
         // get packages 
-        app.get('/packages', async(req, res) => {
+        app.get('/packages', async (req, res) => {
             const result = await packagesCollections.find().toArray()
             console.log(result);
             res.send(result);
-          })
+        })
 
 
         //admin check
@@ -194,9 +187,7 @@ async function run() {
                         const notificationResult = await notificationCollections.insertOne(query);
                     }
                 })
-
             })
-
             res.send(result)
         })
 
