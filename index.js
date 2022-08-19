@@ -165,7 +165,7 @@ async function run() {
         })
 
         //delete
-        // Deleting the order
+        
         app.delete("/professional/:id", async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
