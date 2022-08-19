@@ -153,6 +153,22 @@ async function run() {
             res.send(result);
         })
 
+        //
+
+        app.get('/professional', async (req, res) => {
+            const result = await professionalCollection.find().toArray();
+            res.send(result);
+        })
+
+        //delete
+        // Deleting the order
+        app.delete("/professional/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = professionalCollection.deleteOne(query);
+            res.send(result);
+        });
+
         //user update
         app.put('/users/:email', async (req, res) => {
             const email = req.params.email;
