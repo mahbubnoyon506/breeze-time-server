@@ -255,6 +255,10 @@ run().catch(console.dir)
 
 //maigun
 
+const sendUserEmail = () => {
+
+}
+
 const email = {
     from: 'myemail@example.com',
     to: 'recipient@domain.com', // An array if you have multiple recipients.
