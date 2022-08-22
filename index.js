@@ -58,6 +58,7 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret,
             });
+            console.log(clientSecret)
         })
 
 
