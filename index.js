@@ -122,7 +122,6 @@ async function run() {
             res.send(result);
         })
 
-
         //admin check
         app.get('/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
@@ -265,3 +264,6 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log('Listening the port', port)
 })
+
+
+
