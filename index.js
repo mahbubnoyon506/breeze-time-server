@@ -4,12 +4,24 @@ const jwt = require('jsonwebtoken');       //for jwt//
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
+const nodemailer = require("nodemailer");    //nodemailer//
+const mg = require('nodemailer-mailgun-transport');
+
 
 const port = process.env.PORT || 5000;
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+//mailgun
+const auth = {
+    auth: {
+        api_key: process.env.SM_API,
+        domain: process.env.SM_DOMAIN
+    }
+}
+
+const nodemailerMailgun = nodemailer.createTransport(mg(auth));
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.shcob.mongodb.net/?retryWrites=true&w=majority`;
@@ -241,6 +253,32 @@ async function run() {
 }
 run().catch(console.dir)
 
+//maigun
+
+const email = {
+    from: 'myemail@example.com',
+    to: 'recipient@domain.com', // An array if you have multiple recipients.
+    cc: 'second@domain.com',
+    bcc: 'secretagent@company.gov',
+    subject: 'Hey you, awesome!',
+    'replyTo': 'reply2this@company.com',
+    //You can use "html:" to send HTML email content. It's magic!
+    html: '<b>Wow Big powerful letters</b>',
+    //You can use "text:" to send plain-text content. It's oldschool!
+    text: 'Mailgun rocks, pow pow!'
+}
+nodemailerMailgun.sendMail(email, (err, info) => {
+    if (err) {
+        console.log(`Error: ${err}`);
+    }
+    else {
+        console.log(`Response: ${info}`);
+    }
+});
+
+app.get('/email', (req, res) => {
+    res.send({ "status": true })
+})
 
 app.get('/', (req, res) => {
     res.send('Breeze Time Server Running')
