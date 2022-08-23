@@ -58,6 +58,7 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret,
             });
+            console.log(clientSecret)
         })
 
 
@@ -113,12 +114,55 @@ async function run() {
             }
         })
 
-
         // packages 
+        //post package
+        app.post('/packages', async(req, res) => {
+            const query = req.body;
+            const result = await packagesCollections.insertOne(query);
+            res.send(result)
+        })
+
         // get packages 
         app.get('/packages', async (req, res) => {
             const result = await packagesCollections.find().toArray()
-            console.log(result);
+            res.send(result);
+        })
+
+        //get package with id
+        app.get('/packages/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await packagesCollections.findOne(query);
+            res.send(result);
+        })
+
+        //update package
+        app.put('/packages/:id', async (req, res) => {
+            const id = req.params.id;
+            const data = req.body;
+            const query = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    name: data.naem,
+                    price: data.price,
+                    activeEvent: data.activeEvent,
+                    calender: data.calender,
+                    groupEvent: data.groupEvent,
+                    notificationStatus: data.notificationStatus,
+                    oneToOne: data.oneToOne,
+                    accessType: data.accessType
+                },
+            };
+            const result = await packagesCollections.updateOne(query, updateDoc, options);
+            res.send(result);
+        })
+
+        //delete package
+        app.delete('/packages', async(req, res) => {
+            const id = rep.params.id;
+            const query = {_id: ObjectId(id)};
+            const result = await packagesCollections.deleteOne(query);
             res.send(result);
         })
 
@@ -157,6 +201,21 @@ async function run() {
             res.send(result);
         })
 
+        //get professional
+        app.get('/professional', async (req, res) => {
+            const result = await professionalCollection.find().toArray();
+            res.send(result);
+        })
+
+        //delete
+        // Deleting professional
+        app.delete("/professional/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = professionalCollection.deleteOne(query);
+            res.send(result);
+        });
+
         //user update
         app.put('/users/:email', async (req, res) => {
             const email = req.params.email;
@@ -171,7 +230,6 @@ async function run() {
             res.send({ result, token });
         })
         // for jwt 
-
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
 
