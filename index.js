@@ -2,8 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');       //for jwt//
 require('dotenv').config();
+
+var nodemailer = require('nodemailer');
+var sgTransport = require('nodemailer-sendgrid-transport');
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
+// const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -32,6 +36,41 @@ function verifyJWT(req, res, next) {
     });
 }
 
+const emailSenderOptions = {
+    auth: {
+      api_key: process.env.EMAIL_SENDER_KEY,
+    }
+  }
+
+  const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
+
+function sendEventReceiverEmail(events){
+   const {eventName, eventType, targetedEmail, dateTime, host} = events;
+   var email = {
+    from: process.env.EMAIL_SENDER,
+    to: targetedEmail,
+    subject: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
+    text: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
+    html: `
+      <div>
+        <p>Hello ${targetedEmail}</p>
+        <p>Mr. ${host} inviting you to join a meeting call in the platform ${eventType} at ${dateTime}.</p>
+        <p>If you have any quories then contact with ${host}</p>
+      </div>
+    `
+  };
+  
+  emailClient.sendMail(email, function(err, info){
+    if (err ){
+      console.log(err);
+    }
+    else {
+      console.log('Message sent: ' , info);
+    }
+});
+
+}
+
 // verify jwt 
 async function run() {
     try {
@@ -45,21 +84,21 @@ async function run() {
 
 
         //payment API
-        app.post('/create-payment-intent', async (req, res) => {
-            const { price } = req.body;
-            const amount = price * 100;
-            const paymentIntent = await stripe.paymentIntents.create({
-                amount: amount,
-                currency: "usd",
-                payment_method_types: [
-                    "card"
-                ],
-            });
-            res.send({
-                clientSecret: paymentIntent.client_secret,
-            });
-            console.log(clientSecret)
-        })
+        // app.post('/create-payment-intent', async (req, res) => {
+        //     const { price } = req.body;
+        //     const amount = price * 100;
+        //     const paymentIntent = await stripe.paymentIntents.create({
+        //         amount: amount,
+        //         currency: "usd",
+        //         payment_method_types: [
+        //             "card"
+        //         ],
+        //     });
+        //     res.send({
+        //         clientSecret: paymentIntent.client_secret,
+        //     });
+        //     console.log(clientSecret)
+        // })
 
 
         // for jwt 
@@ -248,10 +287,21 @@ async function run() {
             })
             res.send(result)
         })
-
+        
+        //event creation
         app.post('/events', async (req, res) => {
-            const query = req.body;
+            const events = req.body;
+            const query = {
+                eventName: events.eventname, 
+                eventType: events.event, 
+                description:events.description,
+                targetedEmail: events.targetedEmail,
+                dateTime: events.value,
+                host: events.email
+            }
             const results = await eventCollections.insertOne(query);
+            console.log('sending email')
+            sendEventReceiverEmail(events)
             res.send(results);
         })
 
