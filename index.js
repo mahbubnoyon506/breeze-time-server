@@ -57,7 +57,7 @@ function sendEventReceiverEmail(events) {
         <p>Mr. ${host} inviting you to join a meeting call in the platform ${eventType} at ${dateTime}.</p>
         <p>If you have any quories then contact with ${host}</p>
       </div>
-    `
+
     };
 
     emailClient.sendMail(email, function (err, info) {
@@ -68,6 +68,7 @@ function sendEventReceiverEmail(events) {
             console.log('Message sent: ', info);
         }
     });
+
 
 }
 
@@ -179,7 +180,6 @@ async function run() {
         app.put('/packages/:id', async (req, res) => {
             const id = req.params.id;
             const data = req.body;
-            // console.log(data)
             const query = { _id: ObjectId(id) };
             const options = { upsert: true };
             const updateDoc = {
@@ -288,14 +288,13 @@ async function run() {
             })
             res.send(result)
         })
-
         //event creation
         app.post('/events', async (req, res) => {
             const events = req.body;
             const query = {
-                eventName: events.eventname,
-                eventType: events.event,
-                description: events.description,
+                eventName: events.eventname, 
+                eventType: events.event, 
+                description:events.description,
                 targetedEmail: events.targetedEmail,
                 dateTime: events.value,
                 host: events.email
