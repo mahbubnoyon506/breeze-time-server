@@ -128,8 +128,14 @@ async function run() {
         // get packages 
         app.get('/packages', async (req, res) => {
             const result = await packagesCollections.find().toArray()
-            console.log(result);
+            // console.log(result);
             res.send(result);
+        })
+
+        //update package
+        app.put('/package/:id', async (req, res) => {
+            console.log(req.body)
+            res.send({ status: 'true' })
         })
 
 
