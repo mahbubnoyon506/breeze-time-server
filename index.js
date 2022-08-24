@@ -179,11 +179,12 @@ async function run() {
         app.put('/packages/:id', async (req, res) => {
             const id = req.params.id;
             const data = req.body;
+            // console.log(data)
             const query = { _id: ObjectId(id) };
             const options = { upsert: true };
             const updateDoc = {
                 $set: {
-                    name: data.naem,
+                    name: data.name,
                     price: data.price,
                     activeEvent: data.activeEvent,
                     calender: data.calender,
@@ -198,8 +199,8 @@ async function run() {
         })
 
         //delete package
-        app.delete('/packages', async (req, res) => {
-            const id = rep.params.id;
+        app.delete('/packages/:id', async (req, res) => {
+            const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await packagesCollections.deleteOne(query);
             res.send(result);
