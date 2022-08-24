@@ -203,6 +203,12 @@ async function run() {
             res.send(result);
         })
 
+        //update package
+        app.put('/package/:id', async (req, res) => {
+            console.log(req.body)
+            res.send({ status: 'true' })
+        })
+
 
         //admin check
         app.get('/admin/:email', verifyJWT, async (req, res) => {
