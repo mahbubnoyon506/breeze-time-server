@@ -68,6 +68,7 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret,
             });
+            console.log(clientSecret)
         })
 
 
@@ -123,7 +124,6 @@ async function run() {
             }
         })
 
-
         // packages 
         // get packages 
         app.get('/packages', async (req, res) => {
@@ -132,10 +132,34 @@ async function run() {
             res.send(result);
         })
 
+        //get package with id
+        app.get('/packages/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await packagesCollections.findOne(query);
+            res.send(result);
+        })
+
         //update package
-        app.put('/package/:id', async (req, res) => {
-            console.log(req.body)
-            res.send({ status: 'true' })
+        app.put('/packages/:id', async (req, res) => {
+            const id = req.params.id;
+            const data = req.body;
+            const query = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    name: data.naem,
+                    price: data.price,
+                    activeEvent: data.activeEvent,
+                    calender: data.calender,
+                    groupEvent: data.groupEvent,
+                    notificationStatus: data.notificationStatus,
+                    oneToOne: data.oneToOne,
+                    accessType: data.accessType
+                },
+            };
+            const result = await packagesCollections.updateOne(query, updateDoc, options);
+            res.send(result);
         })
 
 
