@@ -7,7 +7,7 @@ var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-// const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
+const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
 
 const port = process.env.PORT || 5000;
 const app = express();
@@ -44,8 +44,8 @@ const emailSenderOptions = {
 
   const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
 
-function sendEventReceiverEmail(events){
-   const {eventName, eventType, targetedEmail, dateTime, host} = events;
+function sendEventReceiverEmail(query){
+   const {eventName, eventType, targetedEmail, dateTime, host} = query;
    var email = {
     from: process.env.EMAIL_SENDER,
     to: targetedEmail,
@@ -84,22 +84,23 @@ async function run() {
 
 
 
-        //payment API
-        // app.post('/create-payment-intent', async (req, res) => {
-        //     const { price } = req.body;
-        //     const amount = price * 100;
-        //     const paymentIntent = await stripe.paymentIntents.create({
-        //         amount: amount,
-        //         currency: "usd",
-        //         payment_method_types: [
-        //             "card"
-        //         ],
-        //     });
-        //     res.send({
-        //         clientSecret: paymentIntent.client_secret,
-        //     });
-        //     console.log(clientSecret)
-        // })
+        // payment API
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = price * 100;
+            console.log(amount)
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: [
+                    "card"
+                ],
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+           
+        })
 
 
         // for jwt 
@@ -309,18 +310,10 @@ async function run() {
         
         //event creation
         app.post('/events', async (req, res) => {
-            const events = req.body;
-            const query = {
-                eventName: events.eventname, 
-                eventType: events.event, 
-                description:events.description,
-                targetedEmail: events.targetedEmail,
-                dateTime: events.value,
-                host: events.email
-            }
+            const query = req.body;
             const results = await eventCollections.insertOne(query);
             console.log('sending email')
-            sendEventReceiverEmail(events)
+            sendEventReceiverEmail(query)
             res.send(results);
         })
 
