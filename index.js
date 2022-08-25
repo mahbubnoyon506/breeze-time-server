@@ -38,36 +38,37 @@ function verifyJWT(req, res, next) {
 
 const emailSenderOptions = {
     auth: {
-      api_key: process.env.EMAIL_SENDER_KEY,
+        api_key: process.env.EMAIL_SENDER_KEY,
     }
-  }
+}
 
-  const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
+const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
 
-function sendEventReceiverEmail(events){
-   const {eventName, eventType, targetedEmail, dateTime, host} = events;
-   var email = {
-    from: process.env.EMAIL_SENDER,
-    to: targetedEmail,
-    subject: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
-    text: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
-    html: `
+function sendEventReceiverEmail(events) {
+    const { eventName, eventType, targetedEmail, dateTime, host } = events;
+    var email = {
+        from: process.env.EMAIL_SENDER,
+        to: targetedEmail,
+        subject: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
+        text: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
+        html: `
       <div>
         <p>Hello ${targetedEmail}</p>
         <p>Mr. ${host} inviting you to join a meeting call in the platform ${eventType} at ${dateTime}.</p>
         <p>If you have any quories then contact with ${host}</p>
       </div>
-    `
-  };
-  
-  emailClient.sendMail(email, function(err, info){
-    if (err ){
-      console.log(err);
-    }
-    else {
-      console.log('Message sent: ' , info);
-    }
-});
+
+    };
+
+    emailClient.sendMail(email, function (err, info) {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            console.log('Message sent: ', info);
+        }
+    });
+
 
 }
 
@@ -80,6 +81,7 @@ async function run() {
         const professionalCollection = client.db('professionalCollection').collection('professional')
         const notificationCollections = client.db('notificationCollection').collection('eventNotifications');
         const packagesCollections = client.db('packagesCollection').collection('packages');
+        const reviewCollections = client.db('reviewCollection').collection('reviews');
 
 
 
@@ -155,7 +157,7 @@ async function run() {
 
         // packages 
         //post package
-        app.post('/packages', async(req, res) => {
+        app.post('/packages', async (req, res) => {
             const query = req.body;
             const result = await packagesCollections.insertOne(query);
             res.send(result)
@@ -183,7 +185,7 @@ async function run() {
             const options = { upsert: true };
             const updateDoc = {
                 $set: {
-                    name: data.naem,
+                    name: data.name,
                     price: data.price,
                     activeEvent: data.activeEvent,
                     calender: data.calender,
@@ -198,9 +200,9 @@ async function run() {
         })
 
         //delete package
-        app.delete('/packages', async(req, res) => {
-            const id = rep.params.id;
-            const query = {_id: ObjectId(id)};
+        app.delete('/packages/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
             const result = await packagesCollections.deleteOne(query);
             res.send(result);
         })
@@ -269,6 +271,24 @@ async function run() {
             res.send({ result, token });
         })
         // for jwt 
+
+
+
+        // review section
+        app.get('/reviews', async (req, res) => {
+            const result = await reviewCollections.find().toArray()
+            res.send(result);
+        })
+
+        app.post('/reviews', async (req, res) => {
+            const query = req.body;
+            const results = await reviewCollections.insertOne(query);
+            res.send(results);
+        })
+        // review section
+
+
+
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
 
@@ -287,7 +307,6 @@ async function run() {
             })
             res.send(result)
         })
-        
         //event creation
         app.post('/events', async (req, res) => {
             const events = req.body;
