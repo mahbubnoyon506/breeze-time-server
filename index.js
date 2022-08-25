@@ -2,6 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');       //for jwt//
 require('dotenv').config();
+
+var nodemailer = require('nodemailer');
+var sgTransport = require('nodemailer-sendgrid-transport');
+
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require("stripe")(`${process.env.STRIPE_KEY}`);
 
@@ -32,6 +36,41 @@ function verifyJWT(req, res, next) {
     });
 }
 
+const emailSenderOptions = {
+    auth: {
+      api_key: process.env.EMAIL_SENDER_KEY,
+    }
+  }
+
+  const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
+
+function sendEventReceiverEmail(query){
+   const {eventName, eventType, targetedEmail, dateTime, host} = query;
+   var email = {
+    from: process.env.EMAIL_SENDER,
+    to: targetedEmail,
+    subject: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
+    text: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
+    html: `
+      <div>
+        <p>Hello ${targetedEmail}</p>
+        <p>Mr. ${host} inviting you to join a meeting call in the platform ${eventType} at ${dateTime}.</p>
+        <p>If you have any quories then contact with ${host}</p>
+      </div>
+    `
+  };
+  
+  emailClient.sendMail(email, function(err, info){
+    if (err ){
+      console.log(err);
+    }
+    else {
+      console.log('Message sent: ' , info);
+    }
+});
+
+}
+
 // verify jwt 
 async function run() {
     try {
@@ -41,13 +80,15 @@ async function run() {
         const professionalCollection = client.db('professionalCollection').collection('professional')
         const notificationCollections = client.db('notificationCollection').collection('eventNotifications');
         const packagesCollections = client.db('packagesCollection').collection('packages');
+        const reviewCollections = client.db('reviewCollection').collection('reviews');
 
 
 
-        //payment API
+        // payment API
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.body;
             const amount = price * 100;
+            console.log(amount)
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
                 currency: "usd",
@@ -58,7 +99,7 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret,
             });
-            console.log(clientSecret)
+           
         })
 
 
@@ -114,12 +155,55 @@ async function run() {
             }
         })
 
-
         // packages 
+        //post package
+        app.post('/packages', async(req, res) => {
+            const query = req.body;
+            const result = await packagesCollections.insertOne(query);
+            res.send(result)
+        })
+
         // get packages 
         app.get('/packages', async (req, res) => {
             const result = await packagesCollections.find().toArray()
-            console.log(result);
+            res.send(result);
+        })
+
+        //get package with id
+        app.get('/packages/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await packagesCollections.findOne(query);
+            res.send(result);
+        })
+
+        //update package
+        app.put('/packages/:id', async (req, res) => {
+            const id = req.params.id;
+            const data = req.body;
+            const query = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    name: data.naem,
+                    price: data.price,
+                    activeEvent: data.activeEvent,
+                    calender: data.calender,
+                    groupEvent: data.groupEvent,
+                    notificationStatus: data.notificationStatus,
+                    oneToOne: data.oneToOne,
+                    accessType: data.accessType
+                },
+            };
+            const result = await packagesCollections.updateOne(query, updateDoc, options);
+            res.send(result);
+        })
+
+        //delete package
+        app.delete('/packages', async(req, res) => {
+            const id = rep.params.id;
+            const query = {_id: ObjectId(id)};
+            const result = await packagesCollections.deleteOne(query);
             res.send(result);
         })
 
@@ -157,15 +241,14 @@ async function run() {
             res.send(result);
         })
 
-        //
-
+        //get professional
         app.get('/professional', async (req, res) => {
             const result = await professionalCollection.find().toArray();
             res.send(result);
         })
 
         //delete
-        
+        // Deleting professional
         app.delete("/professional/:id", async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
@@ -188,6 +271,23 @@ async function run() {
         })
         // for jwt 
 
+
+
+        // review section
+        app.get('/reviews', async (req, res) => {
+            const result = await reviewCollections.find().toArray()
+            res.send(result);
+        })
+
+        app.post('/reviews', async (req, res) => {
+            const query = req.body;
+            const results = await reviewCollections.insertOne(query);
+            res.send(results);
+        })
+        // review section
+
+
+
         app.get('/events', async (req, res) => {
             const result = await eventCollections.find().toArray();
 
@@ -206,10 +306,13 @@ async function run() {
             })
             res.send(result)
         })
-
+        
+        //event creation
         app.post('/events', async (req, res) => {
             const query = req.body;
             const results = await eventCollections.insertOne(query);
+            console.log('sending email')
+            sendEventReceiverEmail(query)
             res.send(results);
         })
 
