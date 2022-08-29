@@ -38,36 +38,36 @@ function verifyJWT(req, res, next) {
 
 const emailSenderOptions = {
     auth: {
-      api_key: process.env.EMAIL_SENDER_KEY,
+        api_key: process.env.EMAIL_SENDER_KEY,
     }
-  }
+}
 
-  const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
+const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
 
-function sendEventReceiverEmail(query){
-   const {eventName, eventType, targetedEmail, dateTime, host} = query;
-   var email = {
-    from: process.env.EMAIL_SENDER,
-    to: targetedEmail,
-    subject: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
-    text: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
-    html: `
+function sendEventReceiverEmail(query) {
+    const { eventName, eventType, targetedEmail, dateTime, host } = query;
+    var email = {
+        from: process.env.EMAIL_SENDER,
+        to: targetedEmail,
+        subject: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
+        text: `You are invited to join a ${eventName} with ${eventType} at ${dateTime} by ${host}`,
+        html: `
       <div>
         <p>Hello ${targetedEmail}</p>
         <p>Mr. ${host} inviting you to join a meeting call in the platform ${eventType} at ${dateTime}.</p>
         <p>If you have any quories then contact with ${host}</p>
       </div>
     `
-  };
-  
-  emailClient.sendMail(email, function(err, info){
-    if (err ){
-      console.log(err);
-    }
-    else {
-      console.log('Message sent: ' , info);
-    }
-});
+    };
+
+    emailClient.sendMail(email, function (err, info) {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            console.log('Message sent: ', info);
+        }
+    });
 
 }
 
@@ -99,7 +99,7 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret,
             });
-           
+
         })
 
 
@@ -157,7 +157,7 @@ async function run() {
 
         // packages 
         //post package
-        app.post('/packages', async(req, res) => {
+        app.post('/packages', async (req, res) => {
             const query = req.body;
             const result = await packagesCollections.insertOne(query);
             res.send(result)
@@ -200,9 +200,9 @@ async function run() {
         })
 
         //delete package
-        app.delete('/packages', async(req, res) => {
+        app.delete('/packages', async (req, res) => {
             const id = rep.params.id;
-            const query = {_id: ObjectId(id)};
+            const query = { _id: ObjectId(id) };
             const result = await packagesCollections.deleteOne(query);
             res.send(result);
         })
@@ -306,7 +306,7 @@ async function run() {
             })
             res.send(result)
         })
-        
+
         //event creation
         app.post('/events', async (req, res) => {
             const query = req.body;
