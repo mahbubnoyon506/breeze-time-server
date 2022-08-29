@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');       //for jwt//
 require('dotenv').config();
+//for notification trigger
+const moment = require('moment');
+const schedule = require('node-schedule')
 
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
@@ -298,12 +301,14 @@ async function run() {
                 schedule.scheduleJob('eventNotification', thirtyMinBeforeEvent, async () => {
                     if (moment(time).subtract(30, 'm').isAfter(moment())) {
                         const query = {
-                            eventNotification: `Your ${r.eventName} is after 30 min.`
+                            eventNotification: `Your ${r.eventName} is after 30 min.`,
+                            user: req.query.host
                         }
                         const notificationResult = await notificationCollections.insertOne(query);
                     }
                 })
             })
+            console.log(req.query.host)
             res.send(result)
         })
 
@@ -313,6 +318,12 @@ async function run() {
             const results = await eventCollections.insertOne(query);
             console.log('sending email')
             sendEventReceiverEmail(query)
+            //notification
+            const notificationQuery = {
+                eventNotification: `Congratulations You have created a event. ${req.body.eventName}`,
+                user: req.body.host
+            }
+            await notificationCollections.insertOne(notificationQuery);
             res.send(results);
         })
 
