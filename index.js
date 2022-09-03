@@ -241,11 +241,11 @@ async function run() {
         app.post('/users/professional', async (req, res) => {
             const query = req.body;
             const result = await professionalCollection.insertOne(query);
-            const notificationQuery = {
-                eventNotification: `Congratulations You have purchased a package.`,
-                user: req.body.payment.email
-            }
-            await notificationCollections.insertOne(notificationQuery);
+            // const notificationQuery = {
+            //     eventNotification: `Congratulations You have purchased a package.`,
+            //     user: req.body.payment.email
+            // }
+            // await notificationCollections.insertOne(notificationQuery);
             res.send(result);
         })
 
